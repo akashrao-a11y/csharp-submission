@@ -1,0 +1,38 @@
+# Problem Statement – BankCore API
+
+## Overview
+The **BankCore API** is designed to manage users, roles, authentication, and banking data such as customers, employees, banks, branches, and accounts.  
+It uses **JWT authentication** with **RS256 (public and private keys)** to ensure secure access and role-based control.
+
+---
+
+## System Goals
+The system should:
+1. Allow admins, bank employees, and customers to register and log in securely.
+2. Use JWT tokens signed with RS256 for authentication.
+3. Provide both access and refresh tokens for managing user sessions.
+4. Implement Role-Based Access Control (RBAC) to restrict user permissions.
+5. Manage user roles and permissions effectively.
+6. Store and organize information about banks and their branches.
+7. Connect employees and customers with their respective banks and branches.
+8. Record creation and update timestamps for all entities.
+9. Support refresh token validation and revocation.
+10. Keep the database clean, normalized, and ready for future expansion.
+
+---
+
+## Security and Design Rules
+1. Passwords are hashed before being stored.
+2. Tokens expire automatically and are verified using the public key.
+3. Each role determines what operations a user can perform.
+4. The system supports future enhancements and new features easily.
+5. Emails and usernames must be unique.
+6. All relationships use proper foreign keys in SQL Server.
+7. All timestamps use **UTC time**.
+8. The project is built as a **REST API** using **ASP.NET Core**.
+9. Input validation and error handling are implemented consistently.
+
+---
+
+## Objective
+To build a secure and scalable backend system for managing users, roles, authentication, and bank-related data — ensuring proper access control, data integrity, and smooth integration across modules.

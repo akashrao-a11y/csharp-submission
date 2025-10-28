@@ -1,8 +1,7 @@
-﻿using System;
-
-public class Class1
+﻿namespace BankCoreApi.Models
 {
-	public Class1()
-	{
-	}
+    public class SavingsAccount : Account
+    {
+        public double InterestRate { get; set; }
+    }
 }

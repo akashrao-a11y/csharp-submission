@@ -1,0 +1,18 @@
+# Assumptions for UAMS (User Account Management System)
+
+1. The system uses JWT authentication with RS256 encryption.
+2. Access tokens last around 15 minutes; refresh tokens last around 7 days.
+3. Each user can have multiple roles.
+4. Role-based access control defines what users can do.
+5. Two main user groups: bank staff (employees, admins) and customers.
+6. A user can have accounts in multiple banks.
+7. Each bank has many branches; each branch belongs to one bank.
+8. Account types include Savings, Current, and Term Deposit.
+9. Some accounts may belong to minors or have Power of Attorney (POA) holders.
+10. Accounts can support multiple currencies.
+11. Admins manage the whole system; bank users manage their own data.
+12. Refresh tokens are stored safely and can be revoked.
+13. SQL Server is used with EF Core migrations.
+14. All IDs use GUIDs.
+15. Each record stores CreatedAt, UpdatedAt, CreatedBy, and UpdatedBy.
+16. Passwords are always hashed before saving.
