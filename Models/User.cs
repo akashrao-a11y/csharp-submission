@@ -1,16 +1,16 @@
-﻿using BankCoreApi.Models;
-using System.ComponentModel.DataAnnotations;
-
-public class User : AuditableEntity
+﻿namespace BankCoreApi.Models
 {
-    public int Id { get; set; }
-    [Required, MaxLength(100)]
-    public string Username { get; set; } = string.Empty;
-    [Required]
-    public string PasswordHash { get; set; } = string.Empty;
-    [Required, EmailAddress, MaxLength(150)]
-    public string Email { get; set; } = string.Empty;
+    public class User : AuditableEntity
+    {
+        public int Id { get; set; }   // ✅ Changed from UserId → Id (matches DbContext and other models)
+        public string Username { get; set; } = string.Empty;
+        public string PasswordHash { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
 
-    public ICollection<Account>? Accounts { get; set; }
-    public ICollection<Role>? Roles { get; set; }
+        // ✅ Navigation properties
+        public ICollection<Role>? Roles { get; set; }        // For Role relationship
+        public ICollection<Account>? Accounts { get; set; }  // For linked bank accounts
+    }
 }

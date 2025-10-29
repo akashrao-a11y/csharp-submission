@@ -1,97 +1,119 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using BankCoreApi.Dtos;
-using BankCoreApi.Models.Dto;
+using BankCoreApi.Data;
 using BankCoreApi.Models;
-using Microsoft.AspNetCore.Mvc;
 
-
-using BankCoreApi.Data;    // ✅ Required
-
-
-
-[ApiController]
-[Route("api/[controller]")]
-public class AccountsController : ControllerBase
+namespace BankCoreApi.Controllers
 {
-    private readonly AppDbContext _db;
-    public AccountsController(AppDbContext db) => _db = db;
-
-    [HttpGet]
-    public IActionResult GetAll() => Ok(_db.Accounts.Where(a => !a.IsDeleted).ToList());
-
-    [HttpGet("{id}")]
-    public IActionResult Get(Guid id) => Ok(_db.Accounts.Find(id));
-
-    [HttpPost]
-    public IActionResult Create([FromBody] CreateAccountDto dto)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AccountsController : ControllerBase
     {
-        Account account = dto.Type switch
+        private readonly AppDbContext _db;
+        public AccountsController(AppDbContext db) => _db = db;
+
+        // GET: api/accounts
+        [HttpGet]
+        public IActionResult GetAll()
         {
-            "Savings" => new SavingsAccount { AccountNumber = dto.AccountNumber, BranchId = dto.BranchId, CurrencyId = dto.CurrencyId, Balance = dto.InitialDeposit, MinimumBalance = dto.MinimumBalance },
-            "Current" => new CurrentAccount { AccountNumber = dto.AccountNumber, BranchId = dto.BranchId, CurrencyId = dto.CurrencyId, Balance = dto.InitialDeposit, OverdraftLimit = dto.OverdraftLimit },
-            _ => throw new Exception("Unknown type")
-        };
-        _db.Accounts.Add(account);
-        _db.SaveChanges();
-        // add owner
-        _db.AccountOwners.Add(new AccountOwner { AccountId = account.Id, UserId = dto.PrimaryOwnerId, OwnerType = OwnerType.Primary });
-        _db.Transactions.Add(new Transaction { AccountId = account.Id, Amount = dto.InitialDeposit, Type = "InitialDeposit", Notes = "Seed" });
-        _db.SaveChanges();
-        return CreatedAtAction(nameof(Get), new { id = account.Id }, account);
-    }
-
-    [HttpPost("{id}/deposit")]
-    public IActionResult Deposit(Guid id, [FromBody] OperationDto op)
-    {
-        var acc = _db.Accounts.Find(id);
-        if (acc == null || acc.IsDeleted) return NotFound();
-        // check deposit rules (e.g., limits)
-        acc.Balance += op.Amount;
-        _db.Transactions.Add(new Transaction { AccountId = id, Amount = op.Amount, Type = "Deposit", Notes = op.Notes });
-        _db.SaveChanges();
-        return Ok(new { acc.Balance });
-    }
-
-    [HttpPost("{id}/withdraw")]
-    public IActionResult Withdraw(Guid id, [FromBody] OperationDto op)
-    {
-        var acc = _db.Accounts.OfType<Account>().SingleOrDefault(a => a.Id == id);
-        if (acc == null) return NotFound();
-        // check ownership/permissions here (omitted)
-        // withdrawal limit example:
-        decimal dailyLimit = 50000m; // sample
-        // implement per-user/per-day limits via Transaction queries
-
-        if (acc is CurrentAccount ca)
-        {
-            if (acc.Balance + ca.OverdraftLimit < op.Amount) return BadRequest("Insufficient funds/overdraft");
+            var accounts = _db.Accounts
+                .Include(a => a.User)
+                .Include(a => a.Branch)
+                .Where(a => !a.IsClosed)
+                .ToList();
+            return Ok(accounts);
         }
-        else
+
+        // GET: api/accounts/{id}
+        [HttpGet("{id}")]
+        public IActionResult Get(int id)
         {
-            if (acc.Balance < op.Amount) return BadRequest("Insufficient funds");
-            // ensure minimum balance not violated for savings
-            if (acc is SavingsAccount sa)
+            var account = _db.Accounts
+                .Include(a => a.User)
+                .Include(a => a.Branch)
+                .FirstOrDefault(a => a.Id == id);
+
+            if (account == null)
+                return NotFound("Account not found");
+
+            return Ok(account);
+        }
+
+        // POST: api/accounts
+        [HttpPost]
+        public IActionResult Create([FromBody] Account account)
+        {
+            if (account == null)
+                return BadRequest("Invalid account data");
+
+            account.AccountNumber = account.AccountNumber ?? Guid.NewGuid().ToString("N")[..10];
+            account.Balance = account.Balance < 0 ? 0 : account.Balance;
+            account.IsClosed = false;
+
+            _db.Accounts.Add(account);
+            _db.SaveChanges();
+
+            return CreatedAtAction(nameof(Get), new { id = account.Id }, account);
+        }
+
+        // POST: api/accounts/{id}/deposit
+        [HttpPost("{id}/deposit")]
+        public IActionResult Deposit(int id, [FromBody] Account operation)
+        {
+            var acc = _db.Accounts.Find(id);
+            if (acc == null) return NotFound("Account not found");
+            if (acc.IsClosed) return BadRequest("Account is closed");
+
+            if (operation.Balance <= 0)
+                return BadRequest("Deposit amount must be greater than zero");
+
+            acc.Balance += operation.Balance;
+            _db.SaveChanges();
+
+            return Ok(new { Message = "Deposit successful", Balance = acc.Balance });
+        }
+
+        // POST: api/accounts/{id}/withdraw
+        [HttpPost("{id}/withdraw")]
+        public IActionResult Withdraw(int id, [FromBody] Account operation)
+        {
+            var acc = _db.Accounts.Find(id);
+            if (acc == null) return NotFound("Account not found");
+            if (acc.IsClosed) return BadRequest("Account is closed");
+
+            if (operation.Balance <= 0)
+                return BadRequest("Withdraw amount must be greater than zero");
+
+            if (acc.AccountType == "Current" && acc.OverdraftLimit.HasValue)
             {
-                if (acc.Balance - op.Amount < sa.MinimumBalance) return BadRequest("Min balance violation");
+                if (acc.Balance + acc.OverdraftLimit < operation.Balance)
+                    return BadRequest("Insufficient funds/overdraft limit exceeded");
             }
+            else if (acc.Balance < operation.Balance)
+            {
+                return BadRequest("Insufficient funds");
+            }
+
+            acc.Balance -= operation.Balance;
+            _db.SaveChanges();
+
+            return Ok(new { Message = "Withdraw successful", Balance = acc.Balance });
         }
 
-        acc.Balance -= op.Amount;
-        _db.Transactions.Add(new Transaction { AccountId = id, Amount = op.Amount, Type = "Withdraw", Notes = op.Notes });
-        _db.SaveChanges();
-        return Ok(new { acc.Balance });
-    }
+        // DELETE: api/accounts/{id}
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            var acc = _db.Accounts.Find(id);
+            if (acc == null) return NotFound("Account not found");
 
-    [HttpDelete("{id}")]
-    public IActionResult Delete(Guid id)
-    {
-        var acc = _db.Accounts.Find(id);
-        if (acc == null) return NotFound();
-        // limited deletion: only admins or when balance is zero
-        if (acc.Balance != 0) return BadRequest("Account must have zero balance to close.");
-        acc.IsDeleted = true;
-        _db.SaveChanges();
-        return NoContent();
+            if (acc.Balance != 0)
+                return BadRequest("Account must have zero balance to close.");
+
+            acc.IsClosed = true;
+            _db.SaveChanges();
+
+            return NoContent();
+        }
     }
 }
