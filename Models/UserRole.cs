@@ -1,7 +1,13 @@
-﻿public class UserRole
+﻿
+
+namespace BankCoreApi.Models
 {
-    public Guid UserId { get; set; }
-    public User User { get; set; } = null!;
-    public int RoleId { get; set; }
-    public Role Role { get; set; } = null!;
+    public class UserRole
+    {
+        public long UserId { get; set; }
+        public User User { get; set; } = null!;
+
+        public long RoleId { get; set; }
+        public Role Role { get; set; } = null!;
+    }
 }

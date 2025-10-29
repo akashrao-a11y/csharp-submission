@@ -1,6 +1,10 @@
-﻿public class Role
+﻿using BankCoreApi.Models;
+
+public class Role : AuditableEntity
 {
     public int Id { get; set; }
-    public string Name { get; set; } = null!;
-    public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+    public string RoleName { get; set; } = string.Empty;
+
+    public ICollection<Permission>? Permissions { get; set; }
+    public ICollection<User>? Users { get; set; }
 }

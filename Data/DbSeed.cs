@@ -1,51 +1,83 @@
-﻿public static class DbSeed
+﻿using System;
+using System.Linq;
+using BankCoreApi.Data;
+using BankCoreApi.Models;
+
+namespace BankCoreApi.Data
 {
-    public static void Initialize(AppDbContext ctx)
+    public static class DbSeed
     {
-        if (ctx.Banks.Any()) return;
-
-        var bank = new Bank { Name = "MyLocalBank" };
-        ctx.Banks.Add(bank);
-
-        var branch = new Branch { Name = "Main Branch", IFSC = "MLB0001", Bank = bank };
-        ctx.Branches.Add(branch);
-
-        var inr = new Currency { Code = "INR", Name = "Indian Rupee" };
-        var usd = new Currency { Code = "USD", Name = "US Dollar" };
-        ctx.Currencies.AddRange(inr, usd);
-
-        var roleUser = new Role { Name = "User" };
-        var roleTeller = new Role { Name = "Teller" };
-        var roleAdmin = new Role { Name = "Admin" };
-        ctx.Roles.AddRange(roleUser, roleTeller, roleAdmin);
-
-        var u1 = new User { FirstName = "Akash", LastName = "K", Email = "akash@example.com", IsBankUser = false };
-        var u2 = new User { FirstName = "Bank", LastName = "Teller", Email = "teller@bank.local", IsBankUser = true };
-        ctx.Users.AddRange(u1, u2);
-
-        ctx.SaveChanges();
-
-        ctx.UserRoles.AddRange(
-            new UserRole { UserId = u1.Id, RoleId = roleUser.Id },
-            new UserRole { UserId = u2.Id, RoleId = roleTeller.Id }
-        );
-
-        var acc1 = new SavingsAccount
+        public static void Initialize(AppDbContext context)
         {
-            AccountNumber = "SAV1001",
-            Balance = 1000,
-            BranchId = branch.Id,
-            CurrencyId = inr.Id,
-            InterestRate = 3.5m,
-            MinimumBalance = 500
-        };
-        ctx.Accounts.Add(acc1);
-        ctx.SaveChanges();
+            context.Database.EnsureCreated();
 
-        ctx.AccountOwners.Add(new AccountOwner { AccountId = acc1.Id, UserId = u1.Id, OwnerType = OwnerType.Primary });
+            // Seed Banks
+            if (!context.Banks.Any())
+            {
+                var bank = new Bank { BankName = "Central Bank of India" };
+                context.Banks.Add(bank);
+                context.SaveChanges();
+            }
 
-        ctx.Transactions.Add(new Transaction { AccountId = acc1.Id, Amount = 1000, Type = "InitialDeposit", Notes = "Seed" });
+            // Seed Branches
+            if (!context.Branches.Any())
+            {
+                var mainBank = context.Banks.First();
+                var branch = new Branch
+                {
+                    BranchName = "Main Branch",
+                    Address = "Chennai",
+                    BankId = mainBank.Id
+                };
+                context.Branches.Add(branch);
+                context.SaveChanges();
+            }
 
-        ctx.SaveChanges();
+            // Seed Users
+            if (!context.Users.Any())
+            {
+                var user = new User
+                {
+                    Username = "akash",
+                    PasswordHash = "hashedpassword123",
+                    Email = "akash@example.com"
+                };
+                context.Users.Add(user);
+                context.SaveChanges();
+            }
+
+            // Seed Accounts
+            if (!context.Accounts.Any())
+            {
+                var branch = context.Branches.First();
+                var user = context.Users.First();
+
+                var account = new Account
+                {
+                    AccountNumber = "ACC1001",
+                    AccountType = "Savings",
+                    Balance = 5000,
+                    Currency = "INR",
+                    BranchId = branch.Id,
+                    UserId = user.Id
+                };
+
+                context.Accounts.Add(account);
+                context.SaveChanges();
+            }
+
+            // Seed Currencies
+            if (!context.Currencies.Any())
+            {
+                var currencies = new[]
+                {
+                    new Currency { Code = "INR", Name = "Indian Rupee" },
+                    new Currency { Code = "USD", Name = "US Dollar" },
+                    new Currency { Code = "EUR", Name = "Euro" }
+                };
+                context.Currencies.AddRange(currencies);
+                context.SaveChanges();
+            }
+        }
     }
 }

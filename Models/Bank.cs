@@ -1,6 +1,9 @@
-﻿public class Bank
+﻿using BankCoreApi.Models;
+
+public class Bank : AuditableEntity
 {
     public int Id { get; set; }
-    public string Name { get; set; } = null!;
-    public ICollection<Branch> Branches { get; set; } = new List<Branch>();
+    public string BankName { get; set; } = string.Empty;
+
+    public ICollection<Branch>? Branches { get; set; }
 }

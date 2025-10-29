@@ -1,28 +1,25 @@
-﻿public abstract class Account
+﻿using BankCoreApi.Models;
+
+public class Account : AuditableEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public string AccountNumber { get; set; } = null!;
-    public decimal Balance { get; set; } = 0m;
+    public int Id { get; set; }
+    public string AccountNumber { get; set; } = string.Empty;
+    public string AccountType { get; set; } = "Savings"; // Savings / Current / TermDeposit
+    public decimal Balance { get; set; } = 0;
+    public string Currency { get; set; } = "INR";
+    public bool IsClosed { get; set; } = false;
+
+    public int UserId { get; set; }
+    public User? User { get; set; }
+
     public int BranchId { get; set; }
-    public Branch Branch { get; set; } = null!;
-    public int CurrencyId { get; set; }
-    public Currency Currency { get; set; } = null!;
-    public bool IsClosed { get; set; } = false;  // closed
-    public bool IsDeleted { get; set; } = false; // soft delete
-    public bool IsTeamAccount { get; set; } = false;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public Branch? Branch { get; set; }
 
-    public ICollection<AccountOwner> Owners { get; set; } = new List<AccountOwner>();
-    public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
-}
-
-public class SavingsAccount : Account
-{
-    public decimal InterestRate { get; set; } = 0.0m;
-    public decimal MinimumBalance { get; set; } = 0m;
-}
-
-public class CurrentAccount : Account
-{
-    public decimal OverdraftLimit { get; set; } = 0m;
+    // Optional specialized fields
+    public decimal? InterestRate { get; set; }
+    public bool? IsMinor { get; set; }
+    public bool? HasPowerOfAttorney { get; set; }
+    public decimal? OverdraftLimit { get; set; }
+    public decimal? DepositAmount { get; set; }
+    public DateTimeOffset? MaturityDate { get; set; }
 }

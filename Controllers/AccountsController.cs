@@ -1,8 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BankCoreApi.Dtos;
+using BankCoreApi.Models.Dto;
 using BankCoreApi.Models;
 using Microsoft.AspNetCore.Mvc;
+
+
+using BankCoreApi.Data;    // ✅ Required
+
 
 
 [ApiController]

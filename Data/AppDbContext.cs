@@ -1,48 +1,103 @@
-﻿using Microsoft.EntityFrameworkCore;
-public class AppDbContext : DbContext
+﻿using BankCoreApi.Models;
+
+using Microsoft.EntityFrameworkCore;
+
+namespace BankCoreApi.Data
+
 {
-    public AppDbContext(DbContextOptions<AppDbContext> opts) : base(opts) { }
 
-    public DbSet<User> Users => Set<User>();
-    public DbSet<Role> Roles => Set<Role>();
-    public DbSet<UserRole> UserRoles => Set<UserRole>();
-    public DbSet<Bank> Banks => Set<Bank>();
-    public DbSet<Branch> Branches => Set<Branch>();
-    public DbSet<Account> Accounts => Set<Account>();
-    public DbSet<SavingsAccount> SavingsAccounts => Set<SavingsAccount>();
-    public DbSet<CurrentAccount> CurrentAccounts => Set<CurrentAccount>();
-    public DbSet<AccountOwner> AccountOwners => Set<AccountOwner>();
-    public DbSet<Transaction> Transactions => Set<Transaction>();
-    public DbSet<Currency> Currencies => Set<Currency>();
+    public class AppDbContext : DbContext
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
 
-        // TPH for Account
-        modelBuilder.Entity<Account>()
-            .HasDiscriminator<string>("AccountType")
-            .HasValue<SavingsAccount>("Savings")
-            .HasValue<CurrentAccount>("Current");
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        // Composite keys
-        modelBuilder.Entity<UserRole>()
-            .HasKey(ur => new { ur.UserId, ur.RoleId });
+        public DbSet<User> Users => Set<User>();
 
-        modelBuilder.Entity<AccountOwner>()
-            .HasKey(ao => new { ao.UserId, ao.AccountId });
+        public DbSet<Role> Roles => Set<Role>();
 
-        // Relationships
-        modelBuilder.Entity<UserRole>()
-            .HasOne(ur => ur.User).WithMany(u => u.UserRoles).HasForeignKey(ur => ur.UserId);
-        modelBuilder.Entity<UserRole>()
-            .HasOne(ur => ur.Role).WithMany(r => r.UserRoles).HasForeignKey(ur => ur.RoleId);
+        public DbSet<Permission> Permissions => Set<Permission>();
 
-        modelBuilder.Entity<AccountOwner>()
-            .HasOne(ao => ao.User).WithMany(u => u.AccountOwners).HasForeignKey(ao => ao.UserId);
-        modelBuilder.Entity<AccountOwner>()
-            .HasOne(ao => ao.Account).WithMany(a => a.Owners).HasForeignKey(ao => ao.AccountId);
+        public DbSet<Bank> Banks => Set<Bank>();
 
-        // seed small lookup data can be done here or in a separate DbSeed class
+        public DbSet<Branch> Branches => Set<Branch>();
+
+        public DbSet<Account> Accounts => Set<Account>();
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+
+        {
+
+            base.OnModelCreating(modelBuilder);
+
+            // Schema
+
+            modelBuilder.HasDefaultSchema("training");
+
+            // Unique constraints
+
+            modelBuilder.Entity<User>()
+
+                .HasIndex(u => u.Username)
+
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+
+                .HasIndex(u => u.Email)
+
+                .IsUnique();
+
+            modelBuilder.Entity<Account>()
+
+                .HasIndex(a => a.AccountNumber)
+
+                .IsUnique();
+
+            // Many-to-Many User-Roles
+
+            modelBuilder.Entity<User>()
+
+                .HasMany(u => u.Roles)
+
+                .WithMany(r => r.Users);
+
+            // Many-to-Many Role-Permissions
+
+            modelBuilder.Entity<Role>()
+
+                .HasMany(r => r.Permissions)
+
+                .WithMany(p => p.Roles);
+
+            // Relationships
+
+            modelBuilder.Entity<Bank>()
+
+                .HasMany(b => b.Branches)
+
+                .WithOne(br => br.Bank)
+
+                .HasForeignKey(br => br.BankId);
+
+            modelBuilder.Entity<Branch>()
+
+                .HasMany(br => br.Accounts)
+
+                .WithOne(a => a.Branch)
+
+                .HasForeignKey(a => a.BranchId);
+
+            modelBuilder.Entity<User>()
+
+                .HasMany(u => u.Accounts)
+
+                .WithOne(a => a.User)
+
+                .HasForeignKey(a => a.UserId);
+
+        }
+
     }
+
 }

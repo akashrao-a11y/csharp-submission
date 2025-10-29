@@ -1,6 +1,8 @@
-﻿public class Permission
+﻿using BankCoreApi.Models;
+
+public class Permission : AuditableEntity
 {
     public int Id { get; set; }
-    public string Name { get; set; } = null!;
-    // link to roles if required — many-to-many RolePermissions omitted for brevity
+    public string PermissionName { get; set; } = string.Empty;
+    public ICollection<Role>? Roles { get; set; }
 }

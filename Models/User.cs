@@ -1,13 +1,16 @@
-﻿public class User
-{
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public string FirstName { get; set; } = null!;
-    public string LastName { get; set; } = null!;
-    public string Email { get; set; } = null!;
-    public bool IsBankUser { get; set; } = false; // bank user vs normal user
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+﻿using BankCoreApi.Models;
+using System.ComponentModel.DataAnnotations;
 
-    // navigation
-    public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
-    public ICollection<AccountOwner> AccountOwners { get; set; } = new List<AccountOwner>();
+public class User : AuditableEntity
+{
+    public int Id { get; set; }
+    [Required, MaxLength(100)]
+    public string Username { get; set; } = string.Empty;
+    [Required]
+    public string PasswordHash { get; set; } = string.Empty;
+    [Required, EmailAddress, MaxLength(150)]
+    public string Email { get; set; } = string.Empty;
+
+    public ICollection<Account>? Accounts { get; set; }
+    public ICollection<Role>? Roles { get; set; }
 }
